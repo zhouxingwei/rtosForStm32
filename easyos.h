@@ -38,27 +38,23 @@ typedef unsigned char* OSSTK;
 
 typedef struct os_event {
 	U8               eventType;
-	U8               eventGrp;          /*===waiting event prio*/
+	U8               eventGrp;          /*=====waiting event prio======*/
+	U8               msgLenth;
 	U8               eventRdy[4];        
-	void             *msg;              /**/
+	void             *msg;              /*=====queue or mail message===*/
 } OSEVENT;
 
 typedef struct os_time {
-	U8               timeId;
+	U8               timerId;
 	U8               prio;
 	U16              tickLeft;        
 } OSTIME;
 
 typedef struct os_tcb {
-    OSSTK            *pStack;           /* Pointer to current top of stack                         */
-    //struct os_tcb    *pTCBNext;             /* Pointer to next     TCB in the TCB list                 */
-    //struct os_tcb    *pTCBPrev;             /* Pointer to previous TCB in the TCB list                 */
-    OSEVENT          *pEventptr;         /* Pointer to          event control block                 */
-	//U8               name[TASK_NAME_LEN];
+    OSSTK            *pStack;           /* Pointer to current top of stack */
 	U8               prio;
 	U8               taskState;         
 	U8               pendState;          /*real time or time slice*/
-	//U8               timeout;           /*255*10ms*/
 } OSTCB;
 
 typedef struct os_control {
@@ -77,6 +73,9 @@ U32 GetRdyHighPrio(U8 *group,U8 *RdyTbl);
 void SetRdyPrio(U32 prio,U8 *group,U8 *RdyTbl);
 void ClearRdyPrio(U32 prio,U8 *group,U8 *RdyTbl);
 void OsSched(void);
+void* osmemset(void *dest,U32 value,U32 size);
+void* osmemcpy(void *dest,void *src,U32 size);
+void* osmemmv(void *dest, void *src, U32 size)  
 #ifdef __cplusplus
 }
 #endif

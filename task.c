@@ -2,9 +2,12 @@
 
 #include "easyos.h"
 
+OSCONTROL osGlobal;
+OSTIME timerlist[TIMER_MAX_NUM];
+OSTCB taskTbl[MAX_PRIO];
+
 U8 RdyTbl[4]; //16 prorioty
 U8 RdyGroup = 0;
-OSTCB taskTbl[MAX_PRIO];
 OSTCB *current;
 static U8 UnPrioMap[16]={0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3};
 /*
@@ -68,36 +71,108 @@ void ClearRdyPrio(U32 prio,U8 *group,U8 *RdyTbl)
 		*group &= ~(1<<(prio>>2));
 	}
 }
-
+/*
+*********************************************************************************************************
+*                                           OS SCHEDULE TASK
+*
+* Description: This function switch task form current to highest priority ready task
+*
+* Arguments  : void
+*
+* Returns    : void
+*********************************************************************************************************
+*/
 void OsSched(void)
 {
 	U32 i;
 
 	//current = &taskTbl[i];
 }
-
+/*
+*********************************************************************************************************
+*                                           ADD NEW DALAY TIMER TO TIMERLIST
+*
+* Description: This function add new timer to timerlist array
+*
+* Arguments  : prio          is the prio value will be delayed
+			   delay         is the delayed time
+*
+* Returns    : 1----fail,0----success
+*********************************************************************************************************
+*/
+U32 addTimerToList(U8 prio,U32 delay)
+{
+	U32 ret = 1,i = 0;
+	for(i=0;i<TIMER_MAX_NUM;i++)
+	{
+		if(timerlist[i].timerId == 0)   //timer not used
+		{
+			osGlobal.timerNum++;
+			timerlist[i].timerId = osGlobal.timerNum;
+			timerlist[i].prio = prio;
+			timerlist[i].tickLeft = delay;   //10ms*delay
+			ret = 0;
+			break;
+		}
+	}
+	return ret;
+}
+/*
+*********************************************************************************************************
+*                                           DELLETE  DALAY TIMER FROM TIMERLIST
+*
+* Description: This function delete old timer from timerlist array
+*
+* Arguments  : prio          is the prio value will be delayed
+*
+* Returns    : 1----fail,0----success
+*********************************************************************************************************
+*/
+U32 delTimerFromList(U8 prio)
+{
+	U32 ret = 1,i = 0;
+	for(i=0;i<TIMER_MAX_NUM;i++)
+	{
+		if(timerlist[i].prio == prio)   //timer not used
+		{
+			osGlobal.timerNum--;
+			osmemset(&timerlist[i],0,sizeof(OSTIME));
+			ret = 0;
+			break;
+		}
+	}
+	return ret;
+}
+/*
+*********************************************************************************************************
+*                                           TASK DELAY
+*
+* Description: This function will suspend current task delay*10ms
+*
+* Arguments  : delay          current task will be delay,time is delay*10ms
+*
+* Returns    : void
+*********************************************************************************************************
+*/
 void TaskDelay(U32 delay)
 {
-
+	addTimerToList(current->prio,delay);
+	ClearRdyPrio(current->prio,&RdyGroup,&RdyTbl[0]);
 	OsSched();
 }
-
-
-int main(void) //for test
+/*
+*********************************************************************************************************
+*                                           SYSTEM INIT
+*
+* Description: Init system
+*
+* Arguments  : void
+*
+* Returns    : void
+*********************************************************************************************************
+*/
+void SystemInit(void)
 {
-	U32 prio,testprio;
-	DP("enter test prio:\n");
-	scanf("%d",&testprio);
-	SetRdyPrio(testprio,&RdyGroup,&RdyTbl[0]);
-	scanf("%d",&testprio);
-	SetRdyPrio(testprio,&RdyGroup,&RdyTbl[0]);
-	scanf("%d",&testprio);
-	SetRdyPrio(testprio,&RdyGroup,&RdyTbl[0]);
-	prio = GetRdyHighPrio(&RdyGroup,&RdyTbl[0]);
-	DP("get highest prio is %d\n",prio);
-
-	DP("rdytbl[0]:%d,1:%d,2:%d,3:%d,group:%d\n",RdyTbl[0],RdyTbl[1],RdyTbl[2],RdyTbl[3],RdyGroup);
-	ClearRdyPrio(prio,&RdyGroup,&RdyTbl[0]);
-	DP("clear,rdytbl[0]:%d,1:%d,2:%d,3:%d,group is %d\n",RdyTbl[0],RdyTbl[1],RdyTbl[2],RdyTbl[3],RdyGroup);
-	return 0;
+	osGlobal.timerNum = 0;
+	osGlobal.scheduleType = RTT_SCHDULE;
 }
