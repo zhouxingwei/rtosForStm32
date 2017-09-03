@@ -8,7 +8,8 @@ OSTCB taskTbl[MAX_PRIO];
 
 U8 RdyTbl[4]; //16 prorioty
 U8 RdyGroup = 0;
-OSTCB *current;
+OSTCB * volitile current;
+OSTCB * volatile pLastTCB;
 static U8 UnPrioMap[16]={0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3};
 /*
 *********************************************************************************************************
@@ -84,9 +85,14 @@ void ClearRdyPrio(U32 prio,U8 *group,U8 *RdyTbl)
 */
 void OsSched(void)
 {
-	U32 i;
-
-	//current = &taskTbl[i];
+	U32 i,highestprio;
+	highestprio = GetRdyHighPrio(&RdyGroup,&RdyTbl[0]);
+	pLastTCB = current;
+	current = &taskTbl[highestprio];
+	if(current != pLastTCB)
+	{
+		*NVIC_INT_CTRL = NVIC_PENDSVSET;    //set schedule to switch new task
+	}
 }
 /*
 *********************************************************************************************************
@@ -175,4 +181,93 @@ void SystemInit(void)
 {
 	osGlobal.timerNum = 0;
 	osGlobal.scheduleType = RTT_SCHDULE;
+}
+/*
+*********************************************************************************************************
+*                                           SYSTEM INIT
+*
+* Description: SCHEDULE FOR FIRST
+* Arguments  : void
+*
+* Returns    : void
+*********************************************************************************************************
+*/
+ULONG * init_stack(ULONG *stack,void (*task_func)(void))
+{
+
+	/* Simulate the stack frame as it would be created by a context switch
+	interrupt. */
+	*stack = INIT_PSR_VALUE;	/* xPSR */
+	stack--;
+	*stack = (ULONG)task_func;	/* PC */
+	stack--;
+	*stack = (ULONG)task_func;	 /* LR */
+	stack -= 5;	 /* R12, R3, R2 and R1. */
+	*stack = 0; 	/* R0 */
+	stack -= 8;	/* R11, R10, R9, R8, R7, R6, R5 and R4. */
+
+	return stack;
+}
+/*
+*********************************************************************************************************
+*                                           SCHEDULE
+*
+* Description: SCHEDULE FOR FIRST
+* Arguments  : void
+*
+* Returns    : void
+*********************************************************************************************************
+*/
+__asm void Schedule(void)
+{
+//	extern easyTask_timeDisplay;
+	/* Use the NVIC offset register to locate the stack. */
+	ldr r0, =0xE000ED08
+	ldr r0, [r0]
+	ldr r0, [r0]
+	/* Set the msp back to the start of the stack. */
+	msr msp, r0
+	/* Call SVC to start the first task. */
+	svc 0
+//	b easyTask_timeDisplay
+	ALIGN
+	
+}
+/*
+*********************************************************************************************************
+*                                           STARTSCHDULE
+*
+* Description: STARTSCHDULE
+*                                     
+* Arguments  : void
+*
+* Returns    : void
+*********************************************************************************************************
+*/
+void startSchedule(void)
+{
+	Schedule();
+}
+/*
+*********************************************************************************************************
+*                                           TaskCreate
+*
+* Description: STARTSCHDULE
+*
+* Arguments  : void
+*
+* Returns    : void
+*********************************************************************************************************
+*/
+void  taskCreate(void (*func)(void), ULONG *stack, U8 taskId, U8 priority)
+{
+	U32 highprio = 0;
+	taskTbl[priority].pStack = init_stack(stack,func);
+	taskTbl[priority].prio = priority;
+	taskTbl[priority].taskId = taskId;
+	taskTbl[priority].taskState = TASK_READY;
+	taskTbl[priority].pendState = NOT_PEND;
+	SetRdyPrio(priority,&RdyGroup,&RdyTbl[0]);
+	highprio = GetRdyHighPrio(&RdyGroup,&RdyTbl[0]);
+	current = &taskTbl[highprio];
 }

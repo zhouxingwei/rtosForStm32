@@ -8,7 +8,9 @@ extern "C" {
 
 #include "type.h"
 
+#define    configMAX_SYSCALL_INTERRUPT_PRIORITY 0x20
 #define    TIMER_MAX_NUM     8
+#define    EVENT_MAX_NUM     16
 #define    TASK_NAME_LEN     16
 #define    TASK_TICK         10                   /*systick time 10ms*/
 #define    DP printf
@@ -21,6 +23,7 @@ extern "C" {
 #define    MUTEX_EVENT       2
 #define    QUEUE_EVENT       3
 
+#define    NOT_PEND          0
 #define    SEM_PEND          1
 #define    MUTEX_PEND        2
 #define    QUEUE_PEND        3
@@ -34,8 +37,15 @@ extern "C" {
 #define    ERR_PRT           2
 #define    ERR_NUM           3
 
-typedef unsigned char* OSSTK;
+#define INIT_PSR_VALUE 0x01000000
+#define TASK_ID_OVERFLOW  -1
+#define NULL               0
 
+#define EnterCritical() distableInterrupt()
+#define ExitCritical()  entableInterrupt()
+
+typedef unsigned long* OSSTK;
+typedef void (*TASK_FUNC)(void);
 typedef struct os_event {
 	U8               eventType;
 	U8               eventGrp;          /*=====waiting event prio======*/
@@ -52,6 +62,7 @@ typedef struct os_time {
 
 typedef struct os_tcb {
     OSSTK            *pStack;           /* Pointer to current top of stack */
+	U8               taskId;
 	U8               prio;
 	U8               taskState;         
 	U8               pendState;          /*real time or time slice*/
@@ -63,7 +74,8 @@ typedef struct os_control {
 } OSCONTROL;
 
 extern OSTCB taskTbl[MAX_PRIO];  //384byte
-extern OSTCB *current;
+extern OSTCB * volitile current;
+extern OSTCB * volatile pLastTCB;
 extern OSCONTROL osGlobal;
 
 U8  SemPend(OSEVENT *event,U32 timeout);

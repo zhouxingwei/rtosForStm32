@@ -1,5 +1,59 @@
 #include "easyos.h"
-
+OSEVENT eventlist[EVENT_MAX_NUM];
+/*
+*********************************************************************************************************
+*                                           SEMINIT
+*
+* Description: This function will init sem event
+*
+* Arguments  : void
+*
+* Returns    : fail---null,success---sem event pointer
+*********************************************************************************************************
+*/
+OSEVENT * SemInit(void)
+{
+	OSEVENT *semptr = NULL;
+	INT16 i=0;
+	for(i=0;i<EVENT_MAX_NUM;i++)
+	{
+		if(eventlist[i].eventType == INIT_EVENT)
+		{
+			eventlist[i].eventType = SEM_EVENT;
+			eventlist[i].msgLenth = 0;
+			eventlist[i].msg = NULL;			
+			semptr = &eventlist[i];
+			break;
+		}
+	}
+	return semptr;
+}
+/*
+*********************************************************************************************************
+*                                           DELSEM
+*
+* Description: This function will delete sem event
+*
+* Arguments  : OSEVENT of sem will be delete
+*
+* Returns    : fail----1,success---sem event pointer
+*********************************************************************************************************
+*/
+INT8 SemDel(OSEVENT *semptr)
+{
+	INT8 ret = -1;
+	INT16 i=0;
+	for(i=0;i<EVENT_MAX_NUM;i++)
+	{
+		if(semptr == &eventlist[i])
+		{
+			osmemset(semptr,0,sizeof(OSEVENT));
+			ret = i;
+			break;
+		}
+	}
+	return ret;
+}
 /*
 *********************************************************************************************************
 *                                           SEMPEND
@@ -47,7 +101,61 @@ U8  SemPost(OSEVENT *event)
 	SetRdyPrio(prio,&RdyGroup,&RdyTbl[0]);
 	return 0;
 }
+/*
+*********************************************************************************************************
+*                                           QUEUEINIT
+*
+* Description: This function will init queue event
+*
+* Arguments  : void
+*
+* Returns    : fail---null,success---queue event pointer
+*********************************************************************************************************
+*/
+OSEVENT * QqueueInit(U8 lenth,void *ptr)
+{
+	OSEVENT *queuemptr = NULL;
+	INT16 i=0;
+	for(i=0;i<EVENT_MAX_NUM;i++)
+	{
+		if(eventlist[i].eventType == INIT_EVENT)
+		{
+			eventlist[i].eventType = QUEUE_EVENT;
+			eventlist[i].msgLenth = lenth;
+			eventlist[i].msg = ptr;			
+			queuemptr = &eventlist[i];
+			break;
+		}
+	}
+	return queuemptr;
+}
 
+/*
+*********************************************************************************************************
+*                                           QUEUEDEL
+*
+* Description: This function will delete queue event
+*
+* Arguments  : OSEVENT of queue will be delete
+*
+* Returns    : fail----1,success---queue event pointer
+*********************************************************************************************************
+*/
+INT8 QueueDel(OSEVENT *queueptr)
+{
+	INT8 ret = -1;
+	INT16 i=0;
+	for(i=0;i<EVENT_MAX_NUM;i++)
+	{
+		if(queueptr == &eventlist[i])
+		{
+			osmemset(queueptr,0,sizeof(OSEVENT));
+			ret = i;
+			break;
+		}
+	}
+	return ret;
+}
 /*
 *********************************************************************************************************
 *                                           QUEUEPEND
