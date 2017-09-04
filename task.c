@@ -196,9 +196,6 @@ void SystemInit(void)
 */
 ULONG * init_stack(ULONG *stack,void (*task_func)(void))
 {
-
-	/* Simulate the stack frame as it would be created by a context switch
-	interrupt. */
 	*stack = INIT_PSR_VALUE;	/* xPSR */
 	stack--;
 	*stack = (ULONG)task_func;	/* PC */
@@ -222,16 +219,11 @@ ULONG * init_stack(ULONG *stack,void (*task_func)(void))
 */
 __asm void Schedule(void)
 {
-//	extern easyTask_timeDisplay;
-	/* Use the NVIC offset register to locate the stack. */
-	ldr r0, =0xE000ED08
+	ldr r0, =0xE000ED08   /* Use the NVIC offset register to locate the stack. */
 	ldr r0, [r0]
 	ldr r0, [r0]
-	/* Set the msp back to the start of the stack. */
-	msr msp, r0
-	/* Call SVC to start the first task. */
-	svc 0
-//	b easyTask_timeDisplay
+	msr msp, r0           /* Set the msp back to the start of the stack. */
+	svc 0     	          /* Call SVC to start the first task. */
 	ALIGN
 	
 }
