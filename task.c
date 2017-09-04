@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "easyos.h"
 
 OSCONTROL osGlobal;
@@ -28,7 +26,7 @@ U32 GetRdyHighPrio(U8 *group,U8 *RdyTbl)
 	if(*group > MAX_PRIO-1 || *group == 0)
 	{
 		DP("RdyGroup is not right\n");
-		return -1;
+		return 0;   //0 is lowest prio
 	}
 	UnY = UnPrioMap[*group];
 	return ((UnY<<2)+UnPrioMap[RdyTbl[UnY]]);
@@ -86,9 +84,11 @@ void ClearRdyPrio(U32 prio,U8 *group,U8 *RdyTbl)
 void OsSched(void)
 {
 	U32 i,highestprio;
+	EnterCritical();
 	highestprio = GetRdyHighPrio(&RdyGroup,&RdyTbl[0]);
 	pLastTCB = current;
 	current = &taskTbl[highestprio];
+	ExitCritical();
 	if(current != pLastTCB)
 	{
 		*NVIC_INT_CTRL = NVIC_PENDSVSET;    //set schedule to switch new task
@@ -109,6 +109,7 @@ void OsSched(void)
 U32 addTimerToList(U8 prio,U32 delay)
 {
 	U32 ret = 1,i = 0;
+	EnterCritical();
 	for(i=0;i<TIMER_MAX_NUM;i++)
 	{
 		if(timerlist[i].timerId == 0)   //timer not used
@@ -121,6 +122,9 @@ U32 addTimerToList(U8 prio,U32 delay)
 			break;
 		}
 	}
+	ClearRdyPrio(current->prio,&RdyGroup,&RdyTbl[0]);
+	ExitCritical();
+	OsSched();
 	return ret;
 }
 /*
@@ -153,9 +157,9 @@ U32 delTimerFromList(U8 prio)
 *********************************************************************************************************
 *                                           TASK DELAY
 *
-* Description: This function will suspend current task delay*10ms
+* Description: This function will suspend current task delay*tick ms
 *
-* Arguments  : delay          current task will be delay,time is delay*10ms
+* Arguments  : delay          current task will be delay,time is delay*tick ms
 *
 * Returns    : void
 *********************************************************************************************************
@@ -163,8 +167,6 @@ U32 delTimerFromList(U8 prio)
 void TaskDelay(U32 delay)
 {
 	addTimerToList(current->prio,delay);
-	ClearRdyPrio(current->prio,&RdyGroup,&RdyTbl[0]);
-	OsSched();
 }
 /*
 *********************************************************************************************************

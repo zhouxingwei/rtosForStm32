@@ -15,6 +15,7 @@ OSEVENT * SemInit(void)
 {
 	OSEVENT *semptr = NULL;
 	INT16 i=0;
+	EnterCritical();
 	for(i=0;i<EVENT_MAX_NUM;i++)
 	{
 		if(eventlist[i].eventType == INIT_EVENT)
@@ -26,6 +27,7 @@ OSEVENT * SemInit(void)
 			break;
 		}
 	}
+	ExitCritical();
 	return semptr;
 }
 /*
@@ -72,8 +74,10 @@ U8  SemPend(OSEVENT *event,U32 timeout)
 	{
 		return ERR_TYPE;
 	}
+	EnterCritical();
 	SetRdyPrio(current->prio,&event->eventGrp,&event->eventRdy[0]);
 	ClearRdyPrio(current->prio,&RdyGroup,&RdyTbl[0]);
+	ExitCritical();
 	OsSched();
 	return 0;
 }
@@ -96,9 +100,11 @@ U8  SemPost(OSEVENT *event)
 	{
 		return ERR_TYPE;
 	}
+	EnterCritical();
 	prio = GetRdyHighPrio(&event->eventGrp,&event->eventRdy[0]);
 	ClearRdyPrio(prio,&event->eventGrp,&event->eventRdy[0]);
 	SetRdyPrio(prio,&RdyGroup,&RdyTbl[0]);
+	ExitCritical();
 	return 0;
 }
 /*
@@ -112,10 +118,11 @@ U8  SemPost(OSEVENT *event)
 * Returns    : fail---null,success---queue event pointer
 *********************************************************************************************************
 */
-OSEVENT * QqueueInit(U8 lenth,void *ptr)
+OSEVENT * QueueInit(U8 lenth,void *ptr)
 {
 	OSEVENT *queuemptr = NULL;
 	INT16 i=0;
+	EnterCritical();
 	for(i=0;i<EVENT_MAX_NUM;i++)
 	{
 		if(eventlist[i].eventType == INIT_EVENT)
@@ -127,6 +134,7 @@ OSEVENT * QqueueInit(U8 lenth,void *ptr)
 			break;
 		}
 	}
+	ExitCritical();
 	return queuemptr;
 }
 
@@ -174,8 +182,10 @@ U8  QueuePend(OSEVENT *event,U32 timeout)
 	{
 		return ERR_TYPE;
 	}
+	EnterCritical();
 	SetRdyPrio(current->prio,&event->eventGrp,&event->eventRdy[0]);
 	ClearRdyPrio(current->prio,&RdyGroup,&RdyTbl[0]);
+	ExitCritical();
 	OsSched();
 	return 0;
 }
@@ -191,20 +201,17 @@ U8  QueuePend(OSEVENT *event,U32 timeout)
 * Returns    : 0 success  others fail
 *********************************************************************************************************
 */
-U8  QueuePost(OSEVENT *event,U8 *buffer)
+U8  QueuePost(OSEVENT *event)
 {
 	U32 prio;
 	if(event == NULL || event->eventType != QUEUE_EVENT)
 	{
 		return ERR_TYPE;
 	}
-	if(buffer == NULL)
-	{
-		return ERR_PRT;
-	}
+	EnterCritical();
 	prio = GetRdyHighPrio(&event->eventGrp,&event->eventRdy[0]);
 	ClearRdyPrio(prio,&event->eventGrp,&event->eventRdy[0]);
-	osmemcpy(buffer,event->msg,event->msgLenth);
 	SetRdyPrio(prio,&RdyGroup,&RdyTbl[0]);
+	ExitCritical();
 	return 0;
 }

@@ -23,7 +23,7 @@
 #define __STM32F10x_CM3_HAL_H
 
 #define CLOCK 72/8 //时钟=72M
-#define CONFIG_CLOCK_TICK 72000        //10ms
+#define CONFIG_CLOCK_TICK 720000        //10ms
 #define TIME_OVERFLOW  100*3600*24*7    //time overflow
 
 #define NVIC_SYSTICK_CTRL		(( volatile unsigned long *)0xe000e010)

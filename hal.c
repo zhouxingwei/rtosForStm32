@@ -12,7 +12,7 @@ __asm void SVC_Handler(void)
 	ldr r0, [r1]				/* The first item in pxCurrentTCB is the task top of stack. */
 	ldmia r0!, {r4-r11}		/* Pop the registers that are not automatically saved on exception entry and the critical nesting count. */
 	msr psp, r0					/* Restore the task stack pointer. */
-	orr r14, #0xd				
+	orr r14, #0xd             /*return thread mode,used psp and thumb instruction*/				
 	bx r14	
 	nop
 }
@@ -36,8 +36,27 @@ __asm void PendSV_Handler(void)
 
 void SysTick_Handler(void)
 {
-
-	*NVIC_INT_CTRL = NVIC_PENDSVSET;    //set schedule to switch new task if needed
+	U32 i = 0;
+	if(osGlobal.timerNum > 0)
+	{
+		for(i=0;i<TIMER_MAX_NUM;i++)
+		{
+			if(timerlist[i].timerId > 0)   //timer not used
+			{
+				if(timerlist[i].tickLeft > 0)
+				{
+					timerlist[i].tickLeft--;
+				}
+				else if(timerlist[i].tickLeft == 0)
+				{
+					SetRdyPrio(timerlist[i].prio,&RdyGroup,&RdyTbl[0]);
+					delTimerFromList(timerlist[i].prio);
+					continue;
+				}
+			}
+		}
+	}
+	OsSched();
 }
 /*------------------------------------------------------------
                   外部8M,则得到72M的系统时钟
