@@ -182,6 +182,7 @@ void TaskDelay(U32 delay)
 void SystemInit(void)
 {
 	osGlobal.timerNum = 0;
+	osGlobal.systemTick = 0;
 	osGlobal.scheduleType = RTT_SCHDULE;
 }
 /*

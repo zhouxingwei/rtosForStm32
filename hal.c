@@ -37,6 +37,7 @@ __asm void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
 	U32 i = 0;
+	osGlobal.systemTick++;
 	if(osGlobal.timerNum > 0)
 	{
 		for(i=0;i<TIMER_MAX_NUM;i++)

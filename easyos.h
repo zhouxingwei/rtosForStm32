@@ -70,7 +70,8 @@ typedef struct os_tcb {
 
 typedef struct os_control {
 	U8               timerNum;
-	U8               scheduleType;      /* time slice or rtt*/       
+	U8               scheduleType;      /* time slice or rtt*/     
+	U32              systemTick;  
 } OSCONTROL;
 
 extern OSTCB taskTbl[MAX_PRIO];  //384byte
